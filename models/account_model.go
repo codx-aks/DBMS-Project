@@ -5,6 +5,7 @@ import (
 	"wallet-system/config"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type TransferRequest struct {
@@ -14,48 +15,46 @@ type TransferRequest struct {
 }
 
 type DeleteRequest struct {
-	ID1 uuid.UUID `json:"id1"`
-	ID2 uuid.UUID `json:"id2"`
+	ID uuid.UUID `json:"id"`
 }
 
-func InitTable(ctx context.Context) error {
-	_, err := config.Conn.Exec(ctx, "DROP TABLE IF EXISTS accounts")
-	if err != nil {
-		return err
-	}
-	_, err = config.Conn.Exec(ctx, "CREATE TABLE accounts (id UUID PRIMARY KEY, balance INT8)")
+type Balance struct {
+	ID      uuid.UUID `json:"id"`
+	Balance int       `json:"balance"`
+}
+
+func InitTable(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, "CREATE TABLE IF NOT EXISTS accounts (id UUID PRIMARY KEY, balance INT8)")
 	return err
 }
 
-func InsertRows(ctx context.Context, accounts [4]uuid.UUID) error {
-	_, err := config.Conn.Exec(ctx, "INSERT INTO accounts (id, balance) VALUES ($1, $2), ($3, $4), ($5, $6), ($7, $8)",
-		accounts[0], 250, accounts[1], 100, accounts[2], 500, accounts[3], 300)
+func InsertRows(ctx context.Context, tx pgx.Tx, accounts [4]uuid.UUID) error {
+	_, err := tx.Exec(ctx,
+		"INSERT INTO accounts (id, balance) VALUES ($1, $2), ($3, $4), ($5, $6), ($7, $8)",
+		accounts[0], 250, accounts[1], 100, accounts[2], 500, accounts[3], 300,
+	)
 	return err
 }
 
-func PrintBalances(ctx context.Context) ([]map[string]interface{}, error) {
-	rows, err := config.Conn.Query(ctx, "SELECT id, balance FROM accounts")
+func PrintBalances(ctx context.Context, tx pgx.Tx) ([]Balance, error) {
+	rows, err := tx.Query(ctx, "SELECT id, balance FROM accounts")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var balances []map[string]interface{}
+	var balances []Balance
 	for rows.Next() {
-		var id uuid.UUID
-		var balance int
-		if err := rows.Scan(&id, &balance); err != nil {
+		var bal Balance
+		if err := rows.Scan(&bal.ID, &bal.Balance); err != nil {
 			return nil, err
 		}
-		balances = append(balances, map[string]interface{}{
-			"id":      id.String(),
-			"balance": balance,
-		})
+		balances = append(balances, bal)
 	}
 	return balances, nil
 }
 
-func TransferFunds(ctx context.Context, from, to uuid.UUID, amount int) error {
+func TransferFunds(ctx context.Context, from uuid.UUID, to uuid.UUID, amount int) error {
 	tx, err := config.Conn.Begin(ctx)
 	if err != nil {
 		return err
@@ -81,7 +80,7 @@ func TransferFunds(ctx context.Context, from, to uuid.UUID, amount int) error {
 	return tx.Commit(ctx)
 }
 
-func DeleteRows(ctx context.Context, id1, id2 uuid.UUID) error {
-	_, err := config.Conn.Exec(ctx, "DELETE FROM accounts WHERE id IN ($1, $2)", id1, id2)
+func DeleteRows(ctx context.Context, id uuid.UUID) error {
+	_, err := config.Conn.Exec(ctx, "DELETE FROM accounts WHERE id=$1", id)
 	return err
 }

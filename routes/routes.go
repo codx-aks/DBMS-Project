@@ -12,4 +12,6 @@ func RegisterRoutes(e *echo.Echo) {
 	e.GET("/printBalances", controllers.PrintBalancesHandler)
 	e.POST("/transferFunds", controllers.TransferFundsHandler)
 	e.POST("/deleteRows", controllers.DeleteRowsHandler)
+	e.POST("/signup", controllers.SignupHandler)
+	e.POST("/login", controllers.LoginHandler)
 }

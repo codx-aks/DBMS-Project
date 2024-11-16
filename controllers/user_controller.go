@@ -45,7 +45,7 @@ func SignupHandler(c echo.Context) error {
 func LoginHandler(c echo.Context) error {
 	var req struct {
 		Email    string `json:"email"`
-		Password string `json:"password"`
+		Pin string `json:"pin"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, "Invalid request payload")
@@ -54,7 +54,7 @@ func LoginHandler(c echo.Context) error {
 	var user models.User
 	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		var innerErr error
-		user, innerErr = models.GetUserByEmailAndPassword(tx, req.Email, req.Password)
+		user, innerErr = models.GetUserByEmailAndPassword(tx, req.Email, req.Pin)
 		return innerErr
 	})
 	if err != nil {

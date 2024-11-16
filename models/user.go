@@ -9,32 +9,32 @@ import (
 )
 
 type User struct {
-	ID            int     `json:"id" db:"id"`
+	RollNo        string  `json:"roll_no" db:"roll_no"`
 	Name          string  `json:"name" db:"name"`
 	Email         string  `json:"email" db:"email"`
-	Password      string  `json:"password" db:"password"`
-	WalletPin     string  `json:"wallet_pin" db:"wallet_pin"`
+	Pin      string  `json:"pin" db:"pin"`
 	IsApproved    bool    `json:"is_approved" db:"is_approved"`
-	WalletBalance float64 `json:"wallet_balance" db:"wallet_balance"`
+	IsVerfied    bool    `json:"is_verified" db:"is_verified"`
+	WalletBalance int `json:"wallet_balance" db:"wallet_balance"`
 }
 
 func CreateUser(tx pgx.Tx, user User) error {
 	_, err := tx.Exec(
 		context.Background(),
-		"INSERT INTO users (name, email, password, wallet_pin, is_approved, wallet_balance) VALUES ($1, $2, $3, $4, $5, $6)",
-		user.Name, user.Email, user.Password, user.WalletPin, user.IsApproved, user.WalletBalance,
+		"INSERT INTO users (roll_no, name, email, pin,is_verified, is_approved, wallet_balance) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+		user.RollNo,user.Name, user.Email, user.Pin,user.IsVerfied, user.IsApproved, user.WalletBalance
 	)
 	return err
 }
 
-func GetUserByEmailAndPassword(tx pgx.Tx, email, password string) (User, error) {
+func GetUserByEmailAndPassword(tx pgx.Tx, email string, password string) (User, error) {
 	var user User
 
 	err := tx.QueryRow(
 		context.Background(),
-		"SELECT id, name, email, password, is_approved, wallet_balance FROM users WHERE email = $1",
+		"SELECT roll_no, name, email, pin,is_verified, is_approved, wallet_balance FROM users WHERE email = $1",
 		email,
-	).Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.IsApproved, &user.WalletBalance)
+	).Scan( &user.RollNo, &user.Name, &user.Email, &user.Pin, &user.IsVerfied, &user.IsApproved, &user.WalletBalance)
 	if err != nil {
 		return User{}, errors.New("user not found")
 	}
@@ -46,3 +46,5 @@ func GetUserByEmailAndPassword(tx pgx.Tx, email, password string) (User, error) 
 
 	return user, nil
 }
+
+

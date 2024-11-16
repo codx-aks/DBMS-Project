@@ -6,11 +6,11 @@ CREATE TABLE accounts (
 CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     roll_no VARCHAR(9) PRIMARY KEY,
-    pin INT NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    pin VARCHAR(255) NOT NULL,
     is_verified BOOLEAN DEFAULT FALSE,
     is_approved BOOLEAN DEFAULT FALSE,
-    wallet_rem INT DEFAULT 0,
-    other_details VARCHAR(255)
+    wallet_balance INT DEFAULT 0,
 );
 
 CREATE TABLE otp (

@@ -9,18 +9,17 @@ import (
 
 type Transaction struct {
 	ID              int       `json:"id" db:"id"`
-	RequestID       string    `json:"request_id" db:"request_id"`
 	TransactionID   string    `json:"transaction_id" db:"transaction_id"`
-	TransactionType int       `json:"transaction_type" db:"transaction_type"`
-	Amount          float64   `json:"amount" db:"amount"`
+	Credit          int   `json:"credit" db:"credit"`
+	Debit          int   `json:"debit" db:"debit"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
-	FromUserID      int       `json:"from_user_id" db:"from_user_id"`
-	ToVendorID      int       `json:"to_vendor_id" db:"to_vendor_id"`
+	Sender      string       `json:"sender" db:"sender"`
+	Receiver      int       `json:"receiver" db:"receiver"`
+	Description      string       `json:"description" db:"description"`
 }
 
-func GetTransactions(db *pgx.Conn) ([]Transaction, error) {
-	rows, err := db.Query(context.Background(), "SELECT * FROM transactions")
+func GetTransactionsByVendor(db *pgx.Conn, vendorID string) ([]Transaction, error) {
+	rows, err := db.Query(context.Background(), "SELECT * FROM transactions WHERE receiver = $1", vendorID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,12 +29,44 @@ func GetTransactions(db *pgx.Conn) ([]Transaction, error) {
 	for rows.Next() {
 		var t Transaction
 		if err := rows.Scan(
-			&t.ID, &t.RequestID, &t.TransactionID, &t.TransactionType, &t.Amount,
-			&t.CreatedAt, &t.UpdatedAt, &t.FromUserID, &t.ToVendorID,
+			&t.ID, &t.TransactionID, &t.Credit, &t.Debit, &t.CreatedAt,
+			&t.Sender, &t.Receiver, &t.Description,
 		); err != nil {
 			return nil, err
 		}
 		transactions = append(transactions, t)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return transactions, nil
 }
+
+func GetTransactionsByRollNo(db *pgx.Conn, rollNo string) ([]Transaction, error) {
+	rows, err := db.Query(context.Background(), "SELECT * FROM transactions WHERE sender = $1", rollNo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var transactions []Transaction
+	for rows.Next() {
+		var t Transaction
+		if err := rows.Scan(
+			&t.ID, &t.TransactionID, &t.Credit, &t.Debit, &t.CreatedAt,
+			&t.Sender, &t.Receiver, &t.Description,
+		); err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, t)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return transactions, nil
+}
+

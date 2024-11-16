@@ -7,6 +7,7 @@ import (
 	"time"
 	"wallet-system/models"
 	"wallet-system/utils"
+	"wallet-system/helper"
 
 	crdbpgx "github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgxv5"
 	"github.com/jackc/pgx/v5"
@@ -44,10 +45,11 @@ func SignupHandler(c echo.Context) error {
 
 func LoginHandler(c echo.Context) error {
 	var req struct {
-		Email    string `json:"email"`
-		Pin string `json:"pin"`
+		Email string `json:"email"`
+		Pin   string `json:"pin"`
 	}
 	if err := c.Bind(&req); err != nil {
+		log.Printf("Error binding login data: %v", err)
 		return c.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
 
@@ -61,6 +63,8 @@ func LoginHandler(c echo.Context) error {
 		log.Printf("Login error: %v", err)
 		return c.JSON(http.StatusUnauthorized, "Invalid email or password")
 	}
+
+	c.Set("user", user)
 
 	sessionToken, err := utils.GenerateSessionToken()
 	if err != nil {

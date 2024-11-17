@@ -24,7 +24,7 @@ func TransactionApprovalHandler(c echo.Context) error {
 	}
 
 	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
-		transactionID, err := models.TransactionApproval(tx, user.RollNo, req.Pin, req.Amount,req.VendorID)
+		transactionID, err := models.TransactionApproval(context.Background(),user.RollNo, req.Pin, req.Amount,req.VendorID)
 		if err != nil {
 			log.Printf("Error approving transaction for user %v: %v", user.RollNo, err)
 			return err

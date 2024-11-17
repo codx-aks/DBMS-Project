@@ -10,7 +10,7 @@ import (
 
 const (
     maxRetries     = 5
-    initialBackoff = 100 * time.Millisecond 
+    initialBackoff = 10 * time.Millisecond 
 )
 
 func GetTransactionsByVendor(db *pgx.Conn, vendorID string) ([]models.Transaction, error) {
@@ -65,7 +65,13 @@ func GetTransactionsByRollNo(db *pgx.Conn, rollNo string) ([]models.Transaction,
 	return transactions, nil
 }
 
-func TransactionApproval(tx pgx.Tx, userID string, pin string, amount int, vendorID int) (string, error) {
+func TransactionApproval(ctx context.Context,userID string, pin string, amount int, vendorID int) (string, error) {
+	tx, err := config.Conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
 	var user models.User
 
 	err := tx.QueryRow(
@@ -97,36 +103,24 @@ func TransactionApproval(tx pgx.Tx, userID string, pin string, amount int, vendo
 		return "", errors.New("insufficient funds")
 	}
 
-	err = tx.BeginFunc(context.Background(), func(tx pgx.Tx) error {
-		_, err := tx.Exec(context.Background(), "SAVEPOINT save_transaction")
-		if err != nil {
-			return err
-		}
+	err = retryUpdateWallet(tx, user.RollNo, amount)
+	if err != nil {
+		return "", fmt.Errorf("failed to update user wallet: %w", err)
+	}
 
-		err = retryUpdateWallet(tx, user.RollNo, amount)
-		if err != nil {
-			_, rollbackErr := tx.Exec(context.Background(), "ROLLBACK TO SAVEPOINT save_transaction")
-			if rollbackErr != nil {
-				return rollbackErr
-			}
-			return err
-		}
-
-		transactionID, err := insertTransactionWithRetry(tx, user.RollNo, vendorID, amount)
-		if err != nil {
-			_, rollbackErr := tx.Exec(context.Background(), "ROLLBACK TO SAVEPOINT save_transaction")
-			if rollbackErr != nil {
-				return rollbackErr
-			}
-			return err
-		}
-
-		return nil
-	})
+	transactionID, err := insertTransactionWithRetry(tx, user.RollNo, vendorID, amount)
+	if err != nil {
+		return "", fmt.Errorf("failed to insert transaction: %w", err)
+	}
 
 	if err != nil {
 		return "", err
 	}
+
+	err = tx.Commit()
+		if err != nil {
+			return "", fmt.Errorf("failed to commit transaction: %w", err)
+		}
 
 	return "Transaction Approved", nil
 }
@@ -143,7 +137,7 @@ func retryUpdateWallet(tx pgx.Tx, userID string, amount int) error {
 			return nil
 		}
 		if isNetworkOrTransientError(err) {
-            backoffDuration := initialBackoff * (1 << (attempt - 1))
+            backoffDuration := initialBackoff * (1 << (retries - 1))
             time.Sleep(backoffDuration)
 			retries++
             continue 
@@ -152,7 +146,7 @@ func retryUpdateWallet(tx pgx.Tx, userID string, amount int) error {
         return "", fmt.Errorf("failed to log transaction after multiple attempts: %w", err)
 	}
 
-	return fmt.Errorf("failed to update wallet balance after %d retries", maxRetries)
+	return fmt.Errorf("failed to update wallet balance after %d retries: %w", maxRetries , err)
 }
 
 func insertTransactionWithRetry(tx pgx.Tx, senderID string, receiverID int, amount int) (string, error) {
@@ -181,7 +175,7 @@ func insertTransactionWithRetry(tx pgx.Tx, senderID string, receiverID int, amou
 		
     }
 
-    return "", errors.New("failed to insert transaction after multiple retries")
+    return "", errors.New("failed to insert transaction after  %d retries %w",maxRetries,err)
 }
 
 func isNetworkOrTransientError(err error) bool {

@@ -13,58 +13,6 @@ const (
     initialBackoff = 10 * time.Millisecond 
 )
 
-func GetTransactionsByVendor(ctx context.Context, tx pgx.Tx, vendorID int) ([]models.Transaction, error) {
-	rows, err := tx.Query(context.Background(), "SELECT * FROM transactions WHERE receiver = $1", vendorID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var transactions []models.Transaction
-	for rows.Next() {
-		var t models.Transaction
-		if err := rows.Scan(
-			&t.ID, &t.TransactionID, &t.Amount, &t.CreatedAt,
-			&t.Sender, &t.Receiver, &t.Description,
-		); err != nil {
-			return nil, err
-		}
-		transactions = append(transactions, t)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return transactions, nil
-}
-
-func GetTransactionsByRollNo(ctx context.Context, tx pgx.Tx, rollNo string) ([]models.Transaction, error) {
-	rows, err := tx.Query(context.Background(), "SELECT * FROM transactions WHERE sender = $1", rollNo)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var transactions []models.Transaction
-	for rows.Next() {
-		var t models.Transaction
-		if err := rows.Scan(
-			&t.ID, &t.TransactionID, &t.Amount, &t.CreatedAt,
-			&t.Sender, &t.Receiver, &t.Description,
-		); err != nil {
-			return nil, err
-		}
-		transactions = append(transactions, t)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return transactions, nil
-}
-
 func TransactionApproval(ctx context.Context,userID string, pin string, amount int, vendorID int) (string, error) {
 	tx, err := config.Conn.Begin(ctx)
 	if err != nil {

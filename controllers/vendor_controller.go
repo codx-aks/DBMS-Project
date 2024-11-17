@@ -28,6 +28,11 @@ func VendorLoginHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
 
+	req.Password,err = HashPassword(req.Password)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
+
 	var user models.Vendor
 	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		var innerErr error
@@ -72,13 +77,23 @@ func vendorTransactions(c echo.Context) error {
 	}
 
 	var transactions []models.Transaction
+	var total int
 	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		var innerErr error
-		transactions, innerErr = helper.GetTransactionsByVendor(context.Background(), tx,user.VendorID)
+		transactions, total, innerErr = helper.GetTransactionsByVendor(context.Background(), tx, user.VendorID)
 		return innerErr
 	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, "error fetching transactions")
 	}
-	return c.JSON(http.StatusOK, balances)
+
+	var resp struct {
+		Transactions []models.Transaction `json:"transactions"`
+		Total   int `json:"total"`
+	}
+
+	resp.Transactions = transactions
+	resp.Total = total
+
+	return c.JSON(http.StatusOK, resp)
 }

@@ -96,3 +96,24 @@ func setSessionCookie(c echo.Context, sessionToken string) {
 	}
 	c.SetCookie(cookie)
 }
+
+func userTransactions(c echo.Context) error {
+	user, ok := c.Get("user").(models.User)
+	if !ok {
+		log.Println("Error retrieving user from context")
+		return c.JSON(http.StatusUnauthorized, "User not authenticated")
+	}
+
+	var transactions []models.Transaction
+	var total int
+	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
+		var innerErr error
+		transactions, innerErr = helper.GetTransactionsByUserID(context.Background(), tx, user.RollNo)
+		return innerErr
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "error fetching transactions")
+	}
+
+	return c.JSON(http.StatusOK, transactions)
+}

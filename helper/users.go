@@ -37,7 +37,7 @@ func GetUserByEmailAndPassword(tx pgx.Tx, email string, pin string) (models.User
 	return user, nil
 }
 
-func GetTransactionsByRollNo(ctx context.Context, tx pgx.Tx, rollNo string) ([]models.Transaction, error) {
+func GetTransactionsByUserID(ctx context.Context, tx pgx.Tx, rollNo string) ([]models.Transaction, error) {
 	rows, err := tx.Query(context.Background(), "SELECT * FROM transactions WHERE sender = $1", rollNo)
 	if err != nil {
 		return nil, err

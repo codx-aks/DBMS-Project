@@ -21,6 +21,7 @@ CREATE TABLE otp (
 
 CREATE TABLE vendors (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    is_active BOOLEAN DEFAULT FALSE,
     password VARCHAR(255) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description VARCHAR(255),
@@ -43,6 +44,7 @@ CREATE TABLE transactions (
 CREATE TABLE items (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
+    is_available BOOLEAN DEFAULT FALSE,
     cost INT NOT NULL,
     image_url VARCHAR(255),
     description VARCHAR(255),

@@ -36,7 +36,7 @@ func GetTransactionsByVendor(ctx context.Context, tx pgx.Tx, vendorID int) ([]mo
 }
 
 func GetAllVendors(ctx context.Context, tx pgx.Tx) ([]models.RespVendor, error) {
-	rows, err := tx.Query(context.Background(), "SELECT id,name,description,image_url FROM vendors")
+	rows, err := tx.Query(context.Background(), "SELECT id,name,description,image_url FROM vendors WHERE is_active = $1",true)
 	if err != nil {
 		return nil, err
 	}

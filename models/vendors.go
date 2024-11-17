@@ -5,7 +5,8 @@ type Vendor struct {
 	Name        string `json:"name" db:"name"`               
 	Description string `json:"description" db:"description"` 
 	Password string `json:"password" db:"password"` 
-	ImageURL    string `json:"image_url" db:"image_url"`    
+	ImageURL    string `json:"image_url" db:"image_url"`
+	IsActive    bool    `json:"is_active" db:"is_active"`    
 }
 
 type RespVendor struct {

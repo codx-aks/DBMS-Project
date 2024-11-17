@@ -9,7 +9,7 @@ import (
 )
 
 func GetVendorItems(ctx context.Context, tx pgx.Tx, vendorID int) ([]models.Item, error) {
-	rows, err := tx.Query(context.Background(), "SELECT *  FROM items WHERE vendor_id = $1",vendorID)
+	rows, err := tx.Query(context.Background(), "SELECT *  FROM items WHERE vendor_id = $1 AND is_available = $2",vendorID,true)
 	if err != nil {
 		return nil, err
 	}
@@ -18,7 +18,7 @@ func GetVendorItems(ctx context.Context, tx pgx.Tx, vendorID int) ([]models.Item
 	for rows.Next() {
 		var i models.Item
 		if err := rows.Scan(
-			&i.ID, &i.Name, &i.Description, &i.ImageURL,&i.Cost, &i.VendorID
+			&i.ID, &i.Name, &i.Description, &i.ImageURL,&i.Cost, &i.VendorID, &i.IsAvailable
 		); err != nil {
 			return nil, err
 		}

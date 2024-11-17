@@ -21,6 +21,7 @@ CREATE TABLE otp (
 
 CREATE TABLE vendors (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    password VARCHAR(255) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description VARCHAR(255),
     image_url VARCHAR(255)

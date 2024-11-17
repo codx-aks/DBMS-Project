@@ -13,8 +13,8 @@ const (
     initialBackoff = 10 * time.Millisecond 
 )
 
-func GetTransactionsByVendor(db *pgx.Conn, vendorID string) ([]models.Transaction, error) {
-	rows, err := db.Query(context.Background(), "SELECT * FROM transactions WHERE receiver = $1", vendorID)
+func GetTransactionsByVendor(ctx context.Context, tx pgx.Tx, vendorID int) ([]models.Transaction, error) {
+	rows, err := tx.Query(context.Background(), "SELECT * FROM transactions WHERE receiver = $1", vendorID)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +39,8 @@ func GetTransactionsByVendor(db *pgx.Conn, vendorID string) ([]models.Transactio
 	return transactions, nil
 }
 
-func GetTransactionsByRollNo(db *pgx.Conn, rollNo string) ([]models.Transaction, error) {
-	rows, err := db.Query(context.Background(), "SELECT * FROM transactions WHERE sender = $1", rollNo)
+func GetTransactionsByRollNo(ctx context.Context, tx pgx.Tx, rollNo string) ([]models.Transaction, error) {
+	rows, err := tx.Query(context.Background(), "SELECT * FROM transactions WHERE sender = $1", rollNo)
 	if err != nil {
 		return nil, err
 	}

@@ -23,9 +23,12 @@ func SignupHandler(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
-
+	user.Pin,err = HashPassword(user.Pin)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
 	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
-		return models.CreateUser(tx, user)
+		return helper.CreateUser(tx, user)
 	})
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
@@ -53,10 +56,15 @@ func LoginHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
 
+	req.Pin,err = HashPassword(req.Pin)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
+
 	var user models.User
 	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		var innerErr error
-		user, innerErr = models.GetUserByEmailAndPassword(tx, req.Email, req.Pin)
+		user, innerErr = helper.GetUserByEmailAndPassword(tx, req.Email, req.Pin)
 		return innerErr
 	})
 	if err != nil {

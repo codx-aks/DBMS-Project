@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 	"time"
-	"wallet-system/models"
-	"wallet-system/utils"
-	"wallet-system/helper"
+	models "wallet-system/models"
+	utils "wallet-system/utils"
+	helper "wallet-system/helper"
 
 	crdbpgx "github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgxv5"
 	"github.com/jackc/pgx/v5"

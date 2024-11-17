@@ -35,8 +35,8 @@ func GetTransactionsByVendor(ctx context.Context, tx pgx.Tx, vendorID int) ([]mo
 	return transactions, total, nil
 }
 
-func GetAllVendors(ctx context.Context, tx pgx.Tx) ([]models.Vendor, error) {
-	rows, err := tx.Query(context.Background(), "SELECT id,name,description,image_url  FROM vendors")
+func GetAllVendors(ctx context.Context, tx pgx.Tx) ([]models.RespVendor, error) {
+	rows, err := tx.Query(context.Background(), "SELECT id,name,description,image_url FROM vendors")
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +56,6 @@ func GetAllVendors(ctx context.Context, tx pgx.Tx) ([]models.Vendor, error) {
 		return nil, err
 	}
 
-	return transactions, nil
+	return vendors, nil
 }
 

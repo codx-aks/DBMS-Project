@@ -8,6 +8,11 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const (
+    maxRetries     = 5
+    initialBackoff = 100 * time.Millisecond 
+)
+
 func GetTransactionsByVendor(db *pgx.Conn, vendorID string) ([]models.Transaction, error) {
 	rows, err := db.Query(context.Background(), "SELECT * FROM transactions WHERE receiver = $1", vendorID)
 	if err != nil {
@@ -60,9 +65,6 @@ func GetTransactionsByRollNo(db *pgx.Conn, rollNo string) ([]models.Transaction,
 	return transactions, nil
 }
 
-
-const maxRetries = 5 
-
 func TransactionApproval(tx pgx.Tx, userID string, pin string, amount int, vendorID int) (string, error) {
 	var user models.User
 
@@ -83,7 +85,6 @@ func TransactionApproval(tx pgx.Tx, userID string, pin string, amount int, vendo
 	if !user.IsVerified {
 		return "", errors.New("account not verified")
 	}
-
 	if !user.IsApproved {
 		return "", errors.New("account not approved by admin")
 	}
@@ -102,12 +103,12 @@ func TransactionApproval(tx pgx.Tx, userID string, pin string, amount int, vendo
 			return err
 		}
 
-		_, err = tx.Exec(
-			context.Background(),
-			"UPDATE users SET wallet_balance = $1 WHERE roll_no = $2",
-			user.WalletBalance-amount, user.RollNo,
-		)
+		err = retryUpdateWallet(tx, user.RollNo, amount)
 		if err != nil {
+			_, rollbackErr := tx.Exec(context.Background(), "ROLLBACK TO SAVEPOINT save_transaction")
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return err
 		}
 
@@ -127,25 +128,73 @@ func TransactionApproval(tx pgx.Tx, userID string, pin string, amount int, vendo
 		return "", err
 	}
 
-	return "", nil
+	return "Transaction Approved", nil
+}
+
+func retryUpdateWallet(tx pgx.Tx, userID string, amount int) error {
+	var retries int
+	for retries < maxRetries {
+		_, err := tx.Exec(
+			context.Background(),
+			"UPDATE users SET wallet_balance = wallet_balance - $1 WHERE roll_no = $2",
+			amount, userID,
+		)
+		if err == nil {
+			return nil
+		}
+		if isNetworkOrTransientError(err) {
+            backoffDuration := initialBackoff * (1 << (attempt - 1))
+            time.Sleep(backoffDuration)
+			retries++
+            continue 
+        }
+
+        return "", fmt.Errorf("failed to log transaction after multiple attempts: %w", err)
+	}
+
+	return fmt.Errorf("failed to update wallet balance after %d retries", maxRetries)
 }
 
 func insertTransactionWithRetry(tx pgx.Tx, senderID string, receiverID int, amount int) (string, error) {
-	var transactionID string
+    var transactionID string
 
-	for i := 0; i < maxRetries; i++ {
-		err := tx.QueryRow(
-			context.Background(),
-			"INSERT INTO transactions (sender, receiver, amount, description, created_at) "+
-				"VALUES ($1, $2, $3, $4, NOW()) RETURNING transaction_id",
-			senderID, receiverID, amount, "Payment to Vendor", 
-		).Scan(&transactionID)
+    var retries int
+	for retries < maxRetries {
+        err := tx.QueryRow(
+            context.Background(),
+            "INSERT INTO transactions (sender, receiver, amount, description, created_at) "+
+                "VALUES ($1, $2, $3, $4, NOW()) RETURNING transaction_id",
+            senderID, receiverID, amount, "Payment to Vendor", 
+        ).Scan(&transactionID)
 
-		if err == nil {
-			return transactionID, nil
-		}
- 
-	}
+        if err == nil {
+            return transactionID, nil
+        }
 
-	return "", errors.New("failed to log transaction after multiple attempts")
+        if isNetworkOrTransientError(err) {
+            backoffDuration := initialBackoff * (1 << (retries - 1)) 
+            time.Sleep(backoffDuration)
+			retries++
+            continue 
+        }
+        return "", fmt.Errorf("failed to log transaction after multiple attempts: %w", err)
+		
+    }
+
+    return "", errors.New("failed to insert transaction after multiple retries")
+}
+
+func isNetworkOrTransientError(err error) bool {
+    if netErr, ok := err.(net.Error); ok && netErr.Temporary() {
+        return true
+    }
+
+    if pgxErr, ok := err.(*pgx.PgError); ok {
+		//PostgreSQL deadlock or timeout error codes
+        if pgxErr.Code == "40001" || pgxErr.Code == "57P03" { 
+            return true
+        }
+    }
+
+    return false
 }

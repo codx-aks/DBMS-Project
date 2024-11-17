@@ -7,6 +7,7 @@ import (
 	"wallet-system/models"
 	"github.com/jackc/pgx/v5"
 )
+
 func CreateUser(tx pgx.Tx, user models.User) error {
 	_, err := tx.Exec(
 		context.Background(),
@@ -35,3 +36,4 @@ func GetUserByEmailAndPassword(tx pgx.Tx, email string, pin string) (models.User
 
 	return user, nil
 }
+

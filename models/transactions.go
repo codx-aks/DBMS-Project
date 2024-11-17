@@ -10,8 +10,7 @@ import (
 type Transaction struct {
 	ID              int       `json:"id" db:"id"`
 	TransactionID   string    `json:"transaction_id" db:"transaction_id"`
-	Credit          int   `json:"credit" db:"credit"`
-	Debit          int   `json:"debit" db:"debit"`
+	Amount          int   `json:"amount" db:"amount"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 	Sender      string       `json:"sender" db:"sender"`
 	Receiver      int       `json:"receiver" db:"receiver"`

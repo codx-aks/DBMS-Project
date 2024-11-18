@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"fmt"
 	utils "wallet-system/utils"
 	helper "wallet-system/helper"
 	models "wallet-system/models"
@@ -14,27 +15,23 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-const (
-	SessionCookieName = "session_token"
-)
-
 func VendorLoginHandler(c echo.Context) error {
 	var req struct {
-		ID string `json:"id"`
+		ID int `json:"id"`
 		Password   string `json:"password"`
 	}
 	if err := c.Bind(&req); err != nil {
 		log.Printf("Error binding login data: %v", err)
 		return c.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
-
-	req.Password,err = HashPassword(req.Password)
+	var err error
+	req.Password,err = utils.HashPassword(req.Password)
 	if err != nil {
-		return "", fmt.Errorf("failed to hash password: %w", err)
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	var user models.Vendor
-	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
+	err = crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		var innerErr error
 		user, innerErr = helper.GetVendorByIDAndPassword(tx, req.ID, req.Password)
 		return innerErr
@@ -80,7 +77,7 @@ func vendorTransactions(c echo.Context) error {
 	var total int
 	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		var innerErr error
-		transactions, total, innerErr = helper.GetTransactionsByVendor(context.Background(), tx, user.VendorID)
+		transactions, total, innerErr = helper.GetTransactionsByVendor(context.Background(), tx, user.ID)
 		return innerErr
 	})
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 	utils "wallet-system/utils"
 	helper "wallet-system/helper"
 	models "wallet-system/models"
-
+	"fmt"
 	crdbpgx "github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgxv5"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
@@ -23,11 +23,12 @@ func SignupHandler(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
-	user.Pin,err = HashPassword(user.Pin)
+	var err error
+	user.Pin,err = utils.HashPassword(user.Pin)
 	if err != nil {
-		return "", fmt.Errorf("failed to hash password: %w", err)
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
-	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
+	err = crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		return helper.CreateUser(tx, user)
 	})
 	if err != nil {
@@ -55,14 +56,14 @@ func LoginHandler(c echo.Context) error {
 		log.Printf("Error binding login data: %v", err)
 		return c.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
-
-	req.Pin,err = HashPassword(req.Pin)
+	var err error
+	req.Pin,err = utils.HashPassword(req.Pin)
 	if err != nil {
-		return "", fmt.Errorf("failed to hash password: %w", err)
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	var user models.User
-	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
+	err = crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		var innerErr error
 		user, innerErr = helper.GetUserByEmailAndPassword(tx, req.Email, req.Pin)
 		return innerErr
@@ -105,7 +106,7 @@ func userTransactions(c echo.Context) error {
 	}
 
 	var transactions []models.Transaction
-	var total int
+	
 	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		var innerErr error
 		transactions, innerErr = helper.GetTransactionsByUserID(context.Background(), tx, user.RollNo)

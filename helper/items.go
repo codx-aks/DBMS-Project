@@ -2,9 +2,7 @@ package helper
 
 import (
 	"context"
-	"time"
-	"wallet-system/models"
-	"errors"
+	models "wallet-system/models"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -18,7 +16,7 @@ func GetVendorItems(ctx context.Context, tx pgx.Tx, vendorID int) ([]models.Item
 	for rows.Next() {
 		var i models.Item
 		if err := rows.Scan(
-			&i.ID, &i.Name, &i.Description, &i.ImageURL,&i.Cost, &i.VendorID, &i.IsAvailable
+			&i.ID, &i.Name, &i.Description, &i.ImageURL,&i.Cost, &i.VendorID, &i.IsAvailable,
 		); err != nil {
 			return nil, err
 		}

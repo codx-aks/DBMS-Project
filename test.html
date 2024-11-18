@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login and Approve Transaction</title>
+</head>
+<body>
+    <h1>Login and Approve Transaction</h1>
+
+    <!-- Login Section -->
+    <div>
+        <h2>Login</h2>
+        <label for="loginEmail">Email:</label>
+        <input type="email" id="loginEmail" required>
+        <label for="loginPin">Pin:</label>
+        <input type="password" id="loginPin" required>
+        <button id="loginButton">Login</button>
+    </div>
+
+    <!-- Approve Transaction Section -->
+    <div>
+        <h2>Approve Transaction</h2>
+        <label for="approvePin">Pin:</label>
+        <input type="password" id="approvePin" required>
+        <label for="approveAmount">Amount:</label>
+        <input type="number" id="approveAmount" required>
+        <label for="vendorID">Vendor ID:</label>
+        <input type="number" id="vendorID" required>
+        <button id="approveButton">Approve Transaction</button>
+    </div>
+
+    <script>
+        // Login button click event
+        document.getElementById('loginButton').addEventListener('click', function() {
+            const email = document.getElementById('loginEmail').value;
+            const pin = document.getElementById('loginPin').value;
+            console.log("login")
+
+            // Send POST request for login
+            fetch('http://localhost:7070/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, pin })
+            })
+            .then(data => {
+                data= data.json()
+                console.log(data)
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Login failed');
+            });
+        });
+
+        // Approve Transaction button click event
+        document.getElementById('approveButton').addEventListener('click', function() {
+            const pin = document.getElementById('approvePin').value;
+            const amount = document.getElementById('approveAmount').value;
+            const vendorID = document.getElementById('vendorID').value;
+
+            // Send POST request for transaction approval
+            fetch('http://localhost:7070/pay', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ pin: pin, amount: amount, vendor_id: vendorID },
+                {credentials: 'include'})
+            })
+            .then(data => {
+                console.log(data)
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Transaction approval failed');
+            });
+        });
+    </script>
+</body>
+</html>

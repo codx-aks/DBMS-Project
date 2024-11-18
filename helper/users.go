@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
-	"wallet-system/models"
+	models "wallet-system/models"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -12,7 +12,7 @@ func CreateUser(tx pgx.Tx, user models.User) error {
 	_, err := tx.Exec(
 		context.Background(),
 		"INSERT INTO users (roll_no, name, email, pin,is_verified, is_approved, wallet_balance) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-		user.RollNo,user.Name, user.Email, user.Pin,user.IsVerfied, user.IsApproved, user.WalletBalance
+		user.RollNo,user.Name, user.Email, user.Pin,user.IsVerified, user.IsApproved, user.WalletBalance,
 	)
 	return err
 }
@@ -24,14 +24,14 @@ func GetUserByEmailAndPassword(tx pgx.Tx, email string, pin string) (models.User
 		context.Background(),
 		"SELECT roll_no, name, email, pin,is_verified, is_approved, wallet_balance FROM users WHERE email = $1",
 		email,
-	).Scan( &user.RollNo, &user.Name, &user.Email, &user.Pin, &user.IsVerfied, &user.IsApproved, &user.WalletBalance)
+	).Scan( &user.RollNo, &user.Name, &user.Email, &user.Pin, &user.IsVerified, &user.IsApproved, &user.WalletBalance)
 	if err != nil {
-		return User{}, errors.New("user not found")
+		return models.User{}, errors.New("user not found")
 	}
 
 	if user.Pin != pin {
 		log.Printf("Password mismatch", user.Pin, pin)
-		return User{}, errors.New("invalid credentials")
+		return models.User{}, errors.New("invalid credentials")
 	}
 
 	return user, nil

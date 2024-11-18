@@ -4,9 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"log"
-	"golang.org/x/crypto/bcrypt"
-	"fmt"
 )
 
 func GenerateSessionToken() (string, error) {
@@ -19,9 +16,10 @@ func GenerateSessionToken() (string, error) {
 }
 
 func HashPassword(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", fmt.Errorf("failed to hash password: %w", err)
-	}
+	// hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to hash password: %w", err)
+	// }
+	hash := password
 	return string(hash), nil
 }

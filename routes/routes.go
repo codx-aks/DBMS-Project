@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"wallet-system/controllers"
+	controllers "wallet-system/controllers"
 
 	"github.com/labstack/echo/v4"
 )
@@ -14,4 +14,5 @@ func RegisterRoutes(e *echo.Echo) {
 	e.POST("/deleteRows", controllers.DeleteRowsHandler)
 	e.POST("/signup", controllers.SignupHandler)
 	e.POST("/login", controllers.LoginHandler)
+	e.POST("/pay",controllers.TransactionApprovalHandler)
 }

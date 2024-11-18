@@ -4,13 +4,10 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
-	utils "wallet-system/utils"
 	helper "wallet-system/helper"
 	models "wallet-system/models"
-
+	"strconv"
 	crdbpgx "github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgxv5"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 )
@@ -32,7 +29,7 @@ func VendorItems(c echo.Context) error {
 	log.Printf("Received vendorId: %s", ID)
 	
 	var items []models.Item
-	err := crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
+	err = crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		var innerErr error
 		items, innerErr = helper.GetVendorItems(context.Background(), tx, vendorID)
 		return innerErr

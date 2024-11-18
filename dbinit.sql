@@ -3,32 +3,50 @@ CREATE TABLE accounts (
     balance INT8
 );
 
-
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,                      
-    name VARCHAR(100) NOT NULL,                
-    email VARCHAR(150) UNIQUE NOT NULL,         
-    password VARCHAR(255) NOT NULL,             
-    wallet_pin VARCHAR(255) NOT NULL,           
-    is_approved BOOLEAN DEFAULT FALSE,          
-    wallet_balance NUMERIC(10, 2) DEFAULT 0.0   
+    name VARCHAR(100) NOT NULL,
+    roll_no VARCHAR(9) PRIMARY KEY,
+    email VARCHAR(100) NOT NULL,
+    pin VARCHAR(255) NOT NULL,
+    is_verified BOOLEAN DEFAULT FALSE,
+    is_approved BOOLEAN DEFAULT FALSE,
+    wallet_balance INT DEFAULT 0
+);
+
+CREATE TABLE otp (
+    roll_no VARCHAR(9) PRIMARY KEY REFERENCES users(roll_no),
+    otp_last_generated INT NOT NULL,
+    otp_last_generated_time TIMESTAMP NOT NULL
 );
 
 CREATE TABLE vendors (
-    id SERIAL PRIMARY KEY,                      
-    user_name VARCHAR(100) UNIQUE NOT NULL,     
-    stall_name VARCHAR(150) NOT NULL,           
-    password VARCHAR(255) NOT NULL              
+    id SERIAL PRIMARY KEY,
+    is_active BOOLEAN DEFAULT FALSE,
+    password VARCHAR(255) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    image_url VARCHAR(255)
 );
 
 CREATE TABLE transactions (
-    id SERIAL PRIMARY KEY,                      
-    request_id UUID DEFAULT gen_random_uuid(),  
-    transaction_id UUID DEFAULT gen_random_uuid(), 
-    transaction_type INT NOT NULL,              
-    amount NUMERIC(10, 2) NOT NULL,             
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    from_user_id INT REFERENCES users(id),      
-    to_vendor_id INT REFERENCES vendors(id)    
+    id SERIAL PRIMARY KEY,                       
+    transaction_id UUID DEFAULT gen_random_uuid(),                         
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sender VARCHAR(9) NOT NULL,
+    receiver INT NOT NULL,
+    amount INT DEFAULT 0,
+    description VARCHAR(255),
+    FOREIGN KEY (sender) REFERENCES users(roll_no),
+    FOREIGN KEY (receiver) REFERENCES vendors(id)
+);
+
+CREATE TABLE items (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    is_available BOOLEAN DEFAULT FALSE,
+    cost INT NOT NULL,
+    image_url VARCHAR(255),
+    description VARCHAR(255),
+    vendor_id INT NOT NULL,
+    FOREIGN KEY (vendor_id) REFERENCES vendors(id)
 );

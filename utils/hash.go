@@ -14,3 +14,12 @@ func GenerateSessionToken() (string, error) {
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
 }
+
+func HashPassword(password string) (string, error) {
+	// hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to hash password: %w", err)
+	// }
+	hash := password
+	return string(hash), nil
+}
